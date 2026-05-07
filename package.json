@@ -14,20 +14,14 @@
     "appId": "com.antrian.lan",
     "productName": "Antrian LAN",
     "publish": null,
-    "extraResources": [
-      {
-        "from": ".",
-        "to": "app",
-        "filter": [
-          "console.html",
-          "display.html",
-          "launcher.html",
-          "server.js",
-          "preload.js",
-          "main.js",
-          "assets/**"
-        ]
-      }
+    "files": [
+      "**/*",
+      "!.github/**",
+      "!dist/**",
+      "!*.bat",
+      "!*.sh",
+      "!*.bak",
+      "!README.md"
     ],
     "directories": {
       "output": "dist"
