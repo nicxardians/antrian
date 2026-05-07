@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Antrian — Console</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+  body {
+    background: #1e3a8a;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .box {
+    background: #fff;
+    border-radius: 16px;
+    padding: 30px 30px 25px;
+    width: 100%;
+    max-width: 900px;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  }
+  h1 { color: #1e3a8a; margin-bottom: 6px; font-size: 24px; }
+  .status-bar {
+    font-size: 12px;
+    margin-bottom: 20px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    display: inline-block;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .status-bar.connected    { background: #dcfce7; color: #16a34a; }
+  .status-bar.disconnected { background: #fee2e2; color: #dc2626; }
+  .status-bar.connecting   { background: #fef9c3; color: #b45309; }
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 25px;
+  }
+  .display {
+    color: #fff;
+    border-radius: 12px;
+    padding: 20px 15px;
+  }
+  .display.now  { background: #1e3a8a; }
+  .display.next { background: #16a34a; }
+  .display .label { font-size: 12px; opacity: 0.85; letter-spacing: 1.5px; }
+  .display .num   { font-size: 56px; font-weight: bold; margin: 5px 0; line-height: 1; }
+  .pendaftaran-box {
+    background: #fef3c7;
+    border: 2px solid #f59e0b;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 20px;
+  }
+  .pendaftaran-box .title {
+    font-size: 13px; font-weight: 700; color: #b45309;
+    letter-spacing: 1px; margin-bottom: 10px; text-align: center;
+  }
+  .pendaftaran-list {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    justify-content: center; min-height: 32px;
+  }
+  .chip {
+    background: #fff; color: #b45309;
+    border: 1px solid #f59e0b; border-radius: 6px;
+    padding: 5px 10px; font-size: 13px; font-weight: 600;
+  }
+  .chip.first { background: #f59e0b; color: #fff; }
+  .empty-msg  { color: #b45309; font-size: 13px; font-style: italic; }
+  .info { color: #666; font-size: 14px; margin-bottom: 20px; }
+  .info b { color: #1e3a8a; font-size: 16px; }
+  button {
+    width: 100%; padding: 14px 6px; border: none; border-radius: 8px;
+    font-size: 13px; font-weight: 700; cursor: pointer; color: #fff;
+    transition: opacity 0.2s, transform 0.1s; line-height: 1.3; letter-spacing: 0.5px;
+  }
+  button:hover:not(:disabled) { opacity: 0.9; }
+  button:active:not(:disabled) { transform: scale(0.97); }
+  button:disabled { background: #cbd5e1 !important; color: #94a3b8; cursor: not-allowed; opacity: 1; }
+  .btn-pendaftaran  { background: #16a34a; }
+  .btn-ulang-daftar { background: #059669; }
+  .btn-pemeriksaan  { background: #1e3a8a; }
+  .btn-ulang-periksa{ background: #1d4ed8; }
+  .btn-reset        { background: #dc2626; }
+  .btn-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px; margin-bottom: 10px;
+  }
+  .toggle { font-size: 13px; color: #555; margin-top: 8px; }
+  .toggle input { vertical-align: middle; margin-right: 5px; }
+  @media (max-width: 650px) {
+    .btn-row { grid-template-columns: repeat(2, 1fr); }
+    .display .num { font-size: 48px; }
+  }
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>Sistem Antrian</h1>
+  <div class="status-bar connecting" id="statusBar">⏳ Menghubungkan...</div>
+
+  <div class="row">
+    <div class="display next">
+      <div class="label">PENDAFTARAN</div>
+      <div class="num" id="next">-</div>
+    </div>
+    <div class="display now">
+      <div class="label">PEMERIKSAAN</div>
+      <div class="num" id="now">-</div>
+    </div>
+  </div>
+
+  <div class="pendaftaran-box">
+    <div class="title">ANTRIAN MENUNGGU</div>
+    <div class="pendaftaran-list" id="pendaftaranList">
+      <span class="empty-msg">Belum ada antrian menunggu</span>
+    </div>
+  </div>
+
+  <div class="info">
+    Total diambil: <b id="total">0</b> &nbsp;|&nbsp;
+    Menunggu: <b id="wait">0</b>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn-pendaftaran"   onclick="kirim('panggilPendaftaran')">📋 Panggil Pendaftaran</button>
+    <button class="btn-ulang-daftar"  id="btnUlangDaftar"  onclick="kirim('ulangPendaftaran')"  disabled>🔁 Ulang Pendaftaran</button>
+    <button class="btn-pemeriksaan"   id="btnPemeriksaan"  onclick="kirim('panggil')"            disabled>🩺 Panggil Pemeriksaan</button>
+    <button class="btn-ulang-periksa" id="btnUlangPeriksa" onclick="kirim('ulangPemeriksaan')"  disabled>🔁 Ulang Pemeriksaan</button>
+    <button class="btn-reset"         onclick="doReset()">🔄 Reset</button>
+  </div>
+</div>
+
+<script>
+  // ── State lokal (diupdate dari server) ──────────────────────────
+  let st = { last: 0, now: null, pendaftaran: null, q: [], qPemeriksaan: [] };
+
+  // ── WebSocket ───────────────────────────────────────────────────
+  let ws, reconnectTimer;
+
+  function connect() {
+    const host = location.hostname;
+    const port = location.port || 3000;
+    ws = new WebSocket(`ws://${host}:${port}`);
+
+    ws.onopen = () => {
+      setStatus('connected', '🟢 Terhubung ke server');
+      clearTimeout(reconnectTimer);
+    };
+
+    ws.onclose = () => {
+      setStatus('disconnected', '🔴 Terputus — mencoba ulang...');
+      reconnectTimer = setTimeout(connect, 3000);
+    };
+
+    ws.onerror = () => {
+      setStatus('disconnected', '🔴 Gagal terhubung');
+    };
+
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'state') {
+        st = msg.state;
+        render();
+      }
+    };
+  }
+
+  function kirim(action) {
+    if (!ws || ws.readyState !== 1) return;
+    ws.send(JSON.stringify({ action }));
+  }
+
+  function doReset() {
+    if (!confirm('Reset semua antrian?')) return;
+    kirim('reset');
+  }
+
+  function setStatus(cls, txt) {
+    const el = document.getElementById('statusBar');
+    el.className = 'status-bar ' + cls;
+    el.textContent = txt;
+  }
+  function fmt(n) { return String(n).padStart(3,'0'); }
+
+  // ── Render ──────────────────────────────────────────────────────
+  function render() {
+    // Logika tampilan pendaftaran sama dengan display.html:
+    // tampilkan lastPendaftaran selama masih ada antrian menunggu, hilang jika kosong
+    const masihAdaAntrian = st.pendaftaran !== null || st.qPemeriksaan.length > 0;
+    const tampilPendaftaran = (st.lastPendaftaran && masihAdaAntrian) ? st.lastPendaftaran : null;
+
+    document.getElementById('now').textContent  = st.now ? fmt(st.now) : '-';
+    document.getElementById('next').textContent = tampilPendaftaran ? fmt(tampilPendaftaran) : '-';
+    document.getElementById('total').textContent = st.last;
+    document.getElementById('wait').textContent  = st.qPemeriksaan.length + (st.pendaftaran ? 1 : 0);
+
+    const bisaPanggilPemeriksaan = st.qPemeriksaan.length > 0 || (st.pendaftaran !== null && st.pendaftaran !== undefined);
+    document.getElementById('btnPemeriksaan').disabled  = !bisaPanggilPemeriksaan;
+    document.getElementById('btnUlangDaftar').disabled  = !st.pendaftaran;
+    document.getElementById('btnUlangPeriksa').disabled = !st.now;
+
+    const tampil = st.pendaftaran ? [st.pendaftaran, ...st.qPemeriksaan] : [...st.qPemeriksaan];
+    const listEl = document.getElementById('pendaftaranList');
+    if (tampil.length === 0) {
+      listEl.innerHTML = '<span class="empty-msg">Belum ada antrian menunggu</span>';
+    } else {
+      listEl.innerHTML = tampil.map((n, i) =>
+        `<span class="chip${i === 0 ? ' first' : ''}">${fmt(n)}</span>`
+      ).join('');
+    }
+  }
+
+  connect();
+</script>
+</body>
+</html>

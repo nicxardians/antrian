@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Display Antrian</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+  html, body { height: 100%; overflow: hidden; }
+  body { background: #0f172a; color: #fff; display: flex; flex-direction: column; }
+  .header {
+    background: rgba(255,255,255,0.05);
+    text-align: center; padding: 1.2vh 0;
+    font-size: 2vw; font-weight: 700; letter-spacing: 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .main {
+    flex: 1; display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1vw; padding: 1vw;
+  }
+  .panel {
+    border-radius: 16px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 2vw; text-align: center;
+  }
+  .panel.loket       { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); }
+  .panel.pendaftaran { background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); }
+  .panel .label { font-size: 2.2vw; letter-spacing: 4px; opacity: 0.9; margin-bottom: 1vw; }
+  .panel .num   { font-size: 18vw; font-weight: 900; line-height: 1; text-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+  .panel .num.flash { animation: flash 0.6s ease 3; }
+  @keyframes flash {
+    0%, 100% { color: #fff; transform: scale(1); }
+    50%       { color: #fef08a; transform: scale(1.05); }
+  }
+  .fs-btn {
+    position: fixed; top: 12px; right: 12px;
+    background: rgba(255,255,255,0.15); color: #fff;
+    border: 1px solid rgba(255,255,255,0.3); border-radius: 6px;
+    padding: 6px 12px; font-size: 12px; cursor: pointer; z-index: 10;
+  }
+  .clock { position: fixed; top: 12px; left: 16px; font-size: 14px; opacity: 0.7; }
+  .conn-dot {
+    position: fixed; top: 14px; left: 110px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #fbbf24;
+  }
+  .conn-dot.on  { background: #4ade80; }
+  .conn-dot.off { background: #f87171; }
+
+  .overlay {
+    position: fixed; inset: 0; z-index: 999;
+    background: transparent;
+    cursor: default;
+  }
+  @media (max-width: 800px) {
+    .main { grid-template-columns: 1fr; }
+    .panel .num { font-size: 28vw; }
+  }
+</style>
+</head>
+<body>
+  <div class="overlay" id="overlay" onclick="mulai()"></div>
+  <div class="clock" id="clock"></div>
+  <div class="conn-dot" id="connDot"></div>
+  <button class="fs-btn" onclick="toggleFs()">Fullscreen</button>
+
+  <div class="header">SISTEM ANTRIAN</div>
+
+  <div class="main">
+    <div class="panel pendaftaran">
+      <div class="label">PENDAFTARAN</div>
+      <div class="num" id="numNext">-</div>
+    </div>
+    <div class="panel loket">
+      <div class="label">PEMERIKSAAN</div>
+      <div class="num" id="numNow">-</div>
+    </div>
+  </div>
+
+<script>
+  function toggleFs() {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  }
+
+  function fmt(n) { return String(n).padStart(3,'0'); }
+
+  // Jam digital
+  function tickClock() {
+    const d = new Date();
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mm = String(d.getMinutes()).padStart(2,'0');
+    const ss = String(d.getSeconds()).padStart(2,'0');
+    document.getElementById('clock').textContent = `${hh}:${mm}:${ss}`;
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
+
+
+  // ── Suara ───────────────────────────────────────────────────────
+  let voice = null;
+
+  function loadVoice() {
+    const list = speechSynthesis.getVoices();
+    voice = list.find(v => /id|indonesia/i.test(v.lang) && /female|wanita|damayanti/i.test(v.name))
+         || list.find(v => /id|indonesia/i.test(v.lang))
+         || list.find(v => /female|samantha|zira/i.test(v.name));
+  }
+  speechSynthesis.onvoiceschanged = loadVoice;
+  loadVoice();
+
+  function eja(n) {
+    const m = ['nol','satu','dua','tiga','empat','lima','enam','tujuh','delapan','sembilan'];
+    return String(n).split('').map(d => m[d]).join(' ');
+  }
+
+  function bicara(teks) {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(teks);
+    u.lang = 'id-ID'; u.pitch = 1.3; u.rate = 0.9;
+    if (voice) u.voice = voice;
+    speechSynthesis.speak(u);
+  }
+
+  function ding() {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [880, 1100].forEach((freq, i) => {
+      const osc = ctx.createOscillator(), gain = ctx.createGain();
+      osc.frequency.value = freq; osc.type = 'sine';
+      gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.2);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.2 + 0.3);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(ctx.currentTime + i * 0.2);
+      osc.stop(ctx.currentTime + i * 0.2 + 0.3);
+    });
+  }
+
+  function handleSuara(event, state) {
+    if (!event) return;
+    if (event === 'panggilPendaftaran' || event === 'ulangPendaftaran') {
+      if (!state.pendaftaran) return;
+      ding();
+      setTimeout(() => bicara(`Nomor antrian ${eja(fmt(state.pendaftaran))}, mohon menuju pendaftaran.`), 700);
+    } else if (event === 'panggil' || event === 'ulangPemeriksaan') {
+      if (!state.now) return;
+      ding();
+      setTimeout(() => bicara(`Nomor antrian ${eja(fmt(state.now))}, silakan ke pemeriksaan.`), 700);
+    }
+  }
+
+  let prevNow = null, prevNext = null;
+
+  function doFlash(el) {
+    el.classList.remove('flash');
+    void el.offsetWidth;
+    el.classList.add('flash');
+  }
+
+  function applyState(s, event) {
+    if (!s) return;
+    const now               = s.now               || null;
+    const pendaftaran       = s.pendaftaran       || null;
+    const qPemeriksaan      = s.qPemeriksaan      || [];
+    const last              = s.last              || 0;
+    const lastPendaftaran   = s.lastPendaftaran   || null;
+
+    const elNow  = document.getElementById('numNow');
+    const elNext = document.getElementById('numNext');
+
+    elNow.textContent = now ? fmt(now) : '-';
+    // Flash saat nomor berubah ATAU saat event ulang pemeriksaan
+    if (now && (now !== prevNow || event === 'ulangPemeriksaan')) {
+      doFlash(elNow);
+    }
+    prevNow = now;
+
+    const masihAdaAntrian = pendaftaran !== null || qPemeriksaan.length > 0;
+    const tampilPendaftaran = (lastPendaftaran && masihAdaAntrian) ? lastPendaftaran : null;
+
+    elNext.textContent = tampilPendaftaran ? fmt(tampilPendaftaran) : '-';
+    // Flash saat nomor berubah ATAU saat event ulang pendaftaran
+    if (tampilPendaftaran && (tampilPendaftaran !== prevNext || event === 'ulangPendaftaran')) {
+      doFlash(elNext);
+    }
+    prevNext = tampilPendaftaran;
+  }
+
+  // ── WebSocket ────────────────────────────────────────────────────
+  let ws, reconnectTimer;
+
+  function connect() {
+    const host = location.hostname;
+    const port = location.port || 3000;
+    ws = new WebSocket(`ws://${host}:${port}`);
+
+    ws.onopen = () => {
+      document.getElementById('connDot').className = 'conn-dot on';
+      clearTimeout(reconnectTimer);
+    };
+    ws.onclose = () => {
+      document.getElementById('connDot').className = 'conn-dot off';
+      reconnectTimer = setTimeout(connect, 3000);
+    };
+    ws.onerror = () => {
+      document.getElementById('connDot').className = 'conn-dot off';
+    };
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'state') { applyState(msg.state, msg.event); handleSuara(msg.event, msg.state); }
+    };
+  }
+
+
+  let audioUnlocked = false;
+
+  function mulai() {
+    if (audioUnlocked) return;
+    audioUnlocked = true;
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    ctx.resume();
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance('');
+    speechSynthesis.speak(u);
+    loadVoice();
+    document.getElementById('overlay').style.display = 'none';
+  }
+
+  // Auto-unlock saat ada interaksi apapun
+  ['mousemove','mousedown','touchstart','keydown','scroll'].forEach(ev => {
+    document.addEventListener(ev, mulai, { once: true });
+  });
+  connect();
+</script>
+</body>
+</html>
