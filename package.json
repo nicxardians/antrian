@@ -14,19 +14,24 @@
     "appId": "com.antrian.lan",
     "productName": "Antrian LAN",
     "publish": null,
+    "extraResources": [
+      {
+        "from": ".",
+        "to": "app",
+        "filter": [
+          "console.html",
+          "display.html",
+          "launcher.html",
+          "server.js",
+          "preload.js",
+          "main.js",
+          "assets/**"
+        ]
+      }
+    ],
     "directories": {
       "output": "dist"
     },
-    "files": [
-      "main.js",
-      "server.js",
-      "preload.js",
-      "console.html",
-      "display.html",
-      "launcher.html",
-      "assets/**/*",
-      "node_modules/**/*"
-    ],
     "win": {
       "target": [{ "target": "nsis", "arch": ["x64"] }],
       "icon": "assets/icon.ico",
