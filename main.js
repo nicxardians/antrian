@@ -50,9 +50,7 @@ function startServer() {
     const file = map[url];
     if (file) {
       // Cari file relatif terhadap app (bekerja saat dev maupun setelah build)
-      const filePath = app.isPackaged
-        ? path.join(process.resourcesPath, 'app', file)
-        : path.join(__dirname, file);
+      const filePath = path.join(__dirname, file);
       fs.readFile(filePath, (err, data) => {
         if (err) { res.writeHead(404); res.end('File not found'); return; }
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
