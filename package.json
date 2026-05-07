@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Sistem Antrian LAN - Aplikasi Desktop",
   "main": "main.js",
+  "author": "Antrian LAN",
   "scripts": {
     "start": "electron .",
     "build-win": "electron-builder --win --x64",
@@ -12,7 +13,7 @@
   "build": {
     "appId": "com.antrian.lan",
     "productName": "Antrian LAN",
-    "copyright": "Sistem Antrian LAN",
+    "publish": null,
     "directories": {
       "output": "dist"
     },
@@ -22,27 +23,18 @@
       "preload.js",
       "console.html",
       "display.html",
+      "launcher.html",
       "assets/**/*",
       "node_modules/**/*"
     ],
     "win": {
       "target": [{ "target": "nsis", "arch": ["x64"] }],
-      "icon": "assets/icon.ico"
-    },
-    "linux": {
-      "target": "AppImage",
-      "icon": "assets/icon.png"
-    },
-    "mac": {
-      "target": "dmg",
-      "icon": "assets/icon.icns"
+      "icon": "assets/icon.ico",
+      "publish": null
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "installerIcon": "assets/icon.ico",
-      "uninstallerIcon": "assets/icon.ico",
-      "installerHeaderIcon": "assets/icon.ico",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Antrian LAN"
