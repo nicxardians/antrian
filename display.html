@@ -135,7 +135,7 @@
     if (!document.fullscreenElement) document.documentElement.requestFullscreen();
     else document.exitFullscreen();
   }
-  function fmt(n) { return String(n).padStart(3,'0'); }
+  function fmt(n) { return String(n); }
   const HARI  = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
   const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
   function tickClock() {
@@ -158,9 +158,21 @@
   }
   speechSynthesis.onvoiceschanged = loadVoice; loadVoice();
 
-  function eja(n) {
-    const m = ['nol','satu','dua','tiga','empat','lima','enam','tujuh','delapan','sembilan'];
-    return String(n).split('').map(d => m[d]).join(' ');
+  function terbilang(n) {
+    n = parseInt(n, 10);
+    const angka = ['nol','satu','dua','tiga','empat','lima','enam','tujuh','delapan','sembilan','sepuluh','sebelas'];
+    if (n < 12) return angka[n];
+    if (n < 20) return terbilang(n-10)+' belas';
+    if (n < 100) {
+      const puluh = Math.floor(n/10), sisa = n%10;
+      return terbilang(puluh)+' puluh' + (sisa>0 ? ' '+terbilang(sisa) : '');
+    }
+    if (n < 200) return 'seratus' + (n-100>0 ? ' '+terbilang(n-100) : '');
+    if (n < 1000) {
+      const ratus = Math.floor(n/100), sisa = n%100;
+      return terbilang(ratus)+' ratus' + (sisa>0 ? ' '+terbilang(sisa) : '');
+    }
+    return String(n);
   }
   function bicara(teks) {
     speechSynthesis.cancel();
@@ -184,10 +196,10 @@
     if (!event) return;
     if (event==='panggilPendaftaran'||event==='ulangPendaftaran') {
       if (!state.pendaftaran) return;
-      ding(); setTimeout(()=>bicara('Nomor antrian '+eja(fmt(state.pendaftaran))+', mohon menuju pendaftaran.'),700);
+      ding(); setTimeout(()=>bicara('Nomor antrian '+terbilang(state.pendaftaran)+', mohon menuju pendaftaran.'),700);
     } else if (event==='panggil'||event==='ulangPemeriksaan') {
       if (!state.now) return;
-      ding(); setTimeout(()=>bicara('Nomor antrian '+eja(fmt(state.now))+', silakan ke pemeriksaan barang.'),700);
+      ding(); setTimeout(()=>bicara('Nomor antrian '+terbilang(state.now)+', silakan ke pemeriksaan barang.'),700);
     }
   }
   let prevNow=null, prevNext=null;
