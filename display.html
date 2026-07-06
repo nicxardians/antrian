@@ -187,7 +187,7 @@
       ding(); setTimeout(()=>bicara('Nomor antrian '+eja(fmt(state.pendaftaran))+', mohon menuju pendaftaran.'),700);
     } else if (event==='panggil'||event==='ulangPemeriksaan') {
       if (!state.now) return;
-      ding(); setTimeout(()=>bicara('Nomor antrian '+eja(fmt(state.now))+', silakan ke pemeriksaan.'),700);
+      ding(); setTimeout(()=>bicara('Nomor antrian '+eja(fmt(state.now))+', silakan ke pemeriksaan barang.'),700);
     }
   }
   let prevNow=null, prevNext=null;
